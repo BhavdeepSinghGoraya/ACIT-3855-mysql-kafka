@@ -5,6 +5,8 @@ services:
     ports:
     - "2181"
     hostname: zookeeper
+    volumes:
+     - /home/azureuser/zookeeper/data:/opt/zookeeper-3.4.13/data
   kafka:
     image: wurstmeister/kafka
     command: [start-kafka.sh]
@@ -19,8 +21,17 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:29092,OUTSIDE://acit-3855-mysql-kafka.francecentral.cloudapp.azure.com:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LOGS_DIRS: /kafka/kafka-logs
+      KAFKA_BROKER_ID: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /home/azureuser/kafka/kafka-logs
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
     depends_on:
       - "zookeeper"
   db:
@@ -29,11 +40,11 @@ services:
     environment:
       MYSQL_DATABASE: 'bookstore'
       # So you don't have to use root, but you can if you like
-      MYSQL_USER: 
+      MYSQL_USER: 'user'
       # You can use whatever password you like
-      MYSQL_PASSWORD: 
+      MYSQL_PASSWORD: 'password'
       # Password for root access
-      MYSQL_ROOT_PASSWORD: 
+      MYSQL_ROOT_PASSWORD: 'password'
     ports:
       # <Port exposed> : < MySQL Port running inside container>
       - '3306:3306'
@@ -55,9 +66,10 @@ services:
     ports:
       - "8090:8090"
     depends_on:
-      - kafka
-      - db
-
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_started
   processing:
     image: processing
     network_mode: "host"
