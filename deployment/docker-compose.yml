@@ -105,6 +105,20 @@ services:
     depends_on:
       - kafka
 
+  anomaly_detector:
+    image: anomaly_detector
+    ports:
+      - "8120:8120"
+    environment:
+      - TARGET_ENV=test
+    volumes:
+      - /home/azureuser/config/anomaly_detector:/config
+      - /home/azureuser/logs:/logs
+      - anomaly_detector-db:/data
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   dashboard:
     image: dashboard
     ports:
@@ -116,3 +130,4 @@ services:
 volumes:
   my-db:
   processing-db:
+  anomaly_detector-db:
