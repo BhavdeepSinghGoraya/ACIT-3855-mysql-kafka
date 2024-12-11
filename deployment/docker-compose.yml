@@ -100,6 +100,19 @@ services:
     depends_on:
       - storage
 
+  check:
+      image: check
+      ports:
+        - "8130"
+      networks:
+        - "api.network"
+      environment:
+        - TARGET_ENV=test
+      volumes:
+        - /home/azureuser/config/check:/config
+        - /home/azureuser/logs:/logs
+        - check-db:/data
+
   analyzer:
     image: analyzer
     ports:
@@ -154,6 +167,7 @@ services:
       - "analyzer"
       - "dashboard"
       - "anomaly_detector"
+      - "check"
     # Connects the port 80 of the nginx container to localhost:80 or localhost
     ports:
       - "80:80"
@@ -165,6 +179,7 @@ volumes:
   my-db:
   processing-db:
   anomaly_detector-db:
+  check-db:
 
 networks:
   api.network:
